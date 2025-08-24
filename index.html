@@ -1,0 +1,4064 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Inventario Seguro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --warning: #f77f00;
+            --info: #4895ef;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --background: #ffffff;
+            --text: #333333;
+            --border: #dee2e6;
+            --card-bg: #ffffff;
+            --header-bg: #f8f9fa;
+            --table-hover: #f5f5f5;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-mode {
+            --background: #121212;
+            --text: #e0e0e0;
+            --border: #444;
+            --card-bg: #1e1e1e;
+            --header-bg: #2d2d2d;
+            --table-hover: #2a2a2a;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Login Styles */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .login-form {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px var(--shadow);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo-preview {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            margin: 0 auto 1rem;
+            display: block;
+            border: 2px dashed var(--border);
+            border-radius: 50%;
+            padding: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            background-color: var(--card-bg);
+            color: var(--text);
+        }
+
+        .btn {
+            display: inline-block;
+            font-weight: 400;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #d91a6b;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #3ab7d8;
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #df7000;
+        }
+
+        .btn-info {
+            background-color: var(--info);
+            color: white;
+        }
+
+        .btn-info:hover {
+            background-color: #3a84d8;
+        }
+
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        /* Dashboard Styles */
+        .dashboard {
+            display: none;
+        }
+
+        .header {
+            background-color: var(--header-bg);
+            padding: 1rem 0;
+            box-shadow: 0 2px 5px var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-logo {
+            height: 40px;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-menu {
+            position: relative;
+        }
+
+        .user-menu-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .user-menu-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background-color: var(--card-bg);
+            min-width: 200px;
+            box-shadow: 0 8px 16px var(--shadow);
+            border-radius: 5px;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .user-menu-content a {
+            display: block;
+            padding: 0.75rem 1rem;
+            text-decoration: none;
+            color: var(--text);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .user-menu-content a:hover {
+            background-color: var(--table-hover);
+        }
+
+        .user-menu:hover .user-menu-content {
+            display: block;
+        }
+
+        .search-section {
+            background-color: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px var(--shadow);
+            margin: 1.5rem 0;
+        }
+
+        .search-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-input i {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+
+        .search-input input {
+            padding-left: 35px;
+        }
+
+        .filter-toggle {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .search-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .search-filters.active {
+            display: flex;
+        }
+
+        .search-filters .form-group {
+            flex: 1;
+            min-width: 200px;
+            margin-bottom: 0;
+        }
+
+        .download-options {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .table-container {
+            background-color: var(--card-bg);
+            border-radius: 5px;
+            box-shadow: 0 2px 5px var(--shadow);
+            overflow: auto;
+            margin-bottom: 2rem;
+        }
+
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        .inventory-table th,
+        .inventory-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .inventory-table th {
+            background-color: var(--header-bg);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        .inventory-table tr:hover {
+            background-color: var(--table-hover);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-operativo {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-deshabilitado {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .floating-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px var(--shadow);
+            cursor: pointer;
+            z-index: 90;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px var(--shadow);
+            width: 90%;
+            max-width: 800px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            right: 0;
+            top: -10px;
+        }
+
+        .close:hover {
+            color: var(--text);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        /* Toggle Switch */
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 1rem;
+            border-radius: 5px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 10px var(--shadow);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s;
+            display: none;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+            display: flex;
+        }
+
+        .notification-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .notification-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .notification-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .notification-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 1.5rem 0;
+            gap: 0.5rem;
+        }
+
+        .pagination-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            background-color: var(--card-bg);
+            color: var(--text);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pagination-btn.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .pagination-btn:hover:not(.active) {
+            background-color: var(--table-hover);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 1rem;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .inventory-table {
+                min-width: 1100px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .container {
+                padding: 0 15px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .search-filters {
+                flex-direction: column;
+            }
+            
+            .search-filters .form-group {
+                min-width: 100%;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .header-left {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .download-options {
+                flex-direction: column;
+            }
+            
+            .inventory-table {
+                min-width: 1000px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                padding: 1rem;
+            }
+            
+            .search-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+            }
+            
+            .inventory-table {
+                min-width: 900px;
+            }
+            
+            .inventory-table th,
+            .inventory-table td {
+                padding: 0.5rem;
+            }
+
+            .pagination {
+                flex-wrap: wrap;
+            }
+        }
+
+        /* Estilos para el botón de subida de archivo */
+        .file-upload-btn {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .file-upload-btn.visible {
+            display: block;
+        }
+
+        .file-input-hidden {
+            display: none;
+        }
+
+        /* Estilos para el modal de selección de columnas PDF */
+        .columns-modal {
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .columns-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+        }
+
+        .column-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Toast notification */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateX(100%);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            max-width: 350px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast.hide {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        .toast-success {
+            background-color: #4caf50;
+        }
+
+        .toast-error {
+            background-color: #f44336;
+        }
+
+        .toast-warning {
+            background-color: #ff9800;
+        }
+
+        .toast-info {
+            background-color: #2196f3;
+        }
+
+        .toast-icon {
+            font-size: 20px;
+        }
+
+        .toast-message {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+
+        /* Custom confirmation modal */
+        .confirmation-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .confirmation-content {
+            background-color: var(--card-bg);
+            margin: 15% auto;
+            padding: 2rem;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px var(--shadow);
+            text-align: center;
+        }
+
+        .confirmation-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        /* Estilos para el modal de carga de archivos */
+        .file-upload-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-button {
+            background-color: var(--warning);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            display: block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-name {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text);
+            text-align: center;
+        }
+
+        /* Security enhancements */
+        .security-warning {
+            border-left: 4px solid var(--warning);
+            padding: 10px 15px;
+            background-color: rgba(255, 193, 7, 0.1);
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .password-strength {
+            height: 5px;
+            margin-top: 5px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .strength-weak {
+            background-color: #f44336;
+            width: 33%;
+        }
+
+        .strength-medium {
+            background-color: #ff9800;
+            width: 66%;
+        }
+
+        .strength-strong {
+            background-color: #4caf50;
+            width: 100%;
+        }
+
+        .session-timeout-warning {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: var(--warning);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: none;
+        }
+
+        /* Estilos mejorados para el modal de PDF */
+        .pdf-export-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .pdf-export-options .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        /* Centrar el modal de PDF */
+        .pdf-modal-container {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .pdf-modal-content {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px var(--shadow);
+            width: 90%;
+            max-width: 800px;
+            margin: auto;
+        }
+
+        /* Estilos para la sincronización */
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-right: 15px;
+            font-size: 14px;
+        }
+
+        .sync-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .sync-connected {
+            background-color: #4caf50;
+        }
+
+        .sync-disconnected {
+            background-color: #f44336;
+        }
+
+        .sync-connecting {
+            background-color: #ff9800;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .device-list {
+            margin-top: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .device-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .device-item:last-child {
+            border-bottom: none;
+        }
+
+        .device-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .device-name {
+            font-weight: 500;
+        }
+
+        .device-id {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .device-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sync-checkbox {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Session timeout warning -->
+    <div class="session-timeout-warning" id="sessionTimeoutWarning">
+        <i class="fas fa-clock"></i> Su sesión expirará en <span id="timeoutCountdown">5:00</span>. ¿Desea extenderla?
+        <button id="extendSessionBtn" class="btn btn-sm" style="margin-left: 10px;">Extender sesión</button>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div class="confirmation-modal" id="confirmationModal">
+        <div class="confirmation-content">
+            <h3 id="confirmationTitle">Confirmar acción</h3>
+            <p id="confirmationMessage">¿Está seguro de que desea realizar esta acción?</p>
+            <div class="confirmation-buttons">
+                <button id="confirmYes" class="btn btn-danger">Sí</button>
+                <button id="confirmNo" class="btn btn-secondary">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Section -->
+    <div class="login-container" id="loginSection">
+        <div class="login-form">
+            <div class="logo-container">
+                <img id="logoPreview" class="logo-preview" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2UzZTNlMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkeT0iLjM1ZW0iIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQzc2l6ZT0iMjAiIGZvbnQtZmFtaWx5PSJtb25vc3BhY2UiPkxPR088L3RleHQ+PC9zdmc+" alt="Logo del sistema">
+                <h2>Sistema de Inventario</h2>
+            </div>
+            <div class="form-group">
+                <label for="username">Usuario</label>
+                <input type="text" id="username" class="form-control" placeholder="Ingrese su usuario" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" class="form-control" placeholder="Ingrese su contraseña" autocomplete="current-password">
+            </div>
+            <button id="loginBtn" class="btn btn-primary btn-block">Iniciar Sesión</button>
+            
+            <div id="loginAlert" class="alert alert-error" style="display: none;"></div>
+            
+            <div class="security-warning" style="margin-top: 15px;">
+                <i class="fas fa-lock"></i> Esta es una aplicación segura. Sus datos están protegidos.
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div class="dashboard" id="dashboardSection">
+        <!-- Header -->
+        <header class="header">
+            <div class="container header-content">
+                <div class="header-left">
+                    <img id="headerLogo" class="header-logo" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZill=" alt="Logo">
+                    <h1 class="header-title">Gestión de Inventario</h1>
+                </div>
+                
+                <div class="header-actions">
+                    <span id="sessionTimer" style="margin-right: 15px; font-size: 14px; color: var(--text);">
+                        <i class="fas fa-clock"></i> <span id="sessionTimeRemaining">30:00</span>
+                    </span>
+
+                    <span class="sync-status" id="syncStatus" style="display: none;">
+                        <span class="sync-indicator sync-disconnected" id="syncIndicator"></span>
+                        <span id="syncStatusText">Desconectado</span>
+                    </span>
+                    
+                    <label class="theme-switch">
+                        <input type="checkbox" id="themeToggle">
+                        <span class="slider"></span>
+                    </label>
+                    
+                    <div class="user-menu">
+                        <button class="user-menu-btn">
+                            <i class="fas fa-user-circle"></i>
+                            <span id="userName">Usuario</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="user-menu-content">
+                            <a href="#" id="editProfileBtn"><i class="fas fa-user-edit"></i> Editar Perfil</a>
+                            <a href="#" id="uploadLogoBtn" style="display: none;"><i class="fas fa-image"></i> Cambiar Logo</a>
+                            <a href="#" id="manageUsersBtn" style="display: none;"><i class="fas fa-users-cog"></i> Administrar Usuarios</a>
+                            <a href="#" id="syncConfigBtn" style="display: none;"><i class="fas fa-sync"></i> Configurar Sincronización</a>
+                            <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container">
+            <!-- Search and Filters Section -->
+            <section class="search-section">
+                <div class="search-header">
+                    <div class="search-input">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="generalSearch" class="form-control" placeholder="Buscar en el inventario...">
+                    </div>
+                    <button id="filterModalBtn" class="btn btn-info"><i class="fas fa-filter"></i> Filtros Avanzados</button>
+                    <button id="pdfModalBtn" class="btn btn-danger"><i class="fas fa-file-pdf"></i> Exportar PDF</button>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button id="searchBtn" class="btn btn-primary"><i class="fas fa-search"></i> Buscar</button>
+                    <button id="clearSearchBtn" class="btn btn-warning"><i class="fas fa-times"></i> Limpiar</button>
+                    <button id="addItemBtn" class="btn btn-success"><i class="fas fa-plus"></i> Agregar Nuevo</button>
+                </div>
+            </section>
+
+            <!-- Inventory Table -->
+            <section class="table-container">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Serial</th>
+                            <th>Color</th>
+                            <th>N° Bien</th>
+                            <th>Lugar</th>
+                            <th>Fecha Inserción</th>
+                            <th>Tipo</th>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Persona asignada</th>
+                            <th>Observación</th>
+                            <th>Fecha Deshab.</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Pagination -->
+            <div class="pagination" id="paginationContainer"></div>
+            <div class="pagination-info" id="paginationInfo"></div>
+        </main>
+
+        <!-- Floating Button for Backup -->
+        <div class="floating-btn" id="backupBtn" title="Copia de seguridad">
+            <i class="fas fa-database fa-lg"></i>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add/Edit Item Modal -->
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Agregar Nuevo Elemento</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div id="modalAlert" class="alert alert-error" style="display: none;"></div>
+            <form id="itemForm">
+                <input type="hidden" id="itemId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="serial">Serial *</label>
+                        <input type="text" id="serial" class="form-control" required maxlength="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="color">Color</label>
+                        <input type="text" id="color" class="form-control" maxlength="50">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nBien">N° Bien *</label>
+                        <input type="text" id="nBien" class="form-control" required maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label for="lugar">Lugar</label>
+                        <input type="text" id="lugar" class="form-control" maxlength="100">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fechaInsercion">Fecha Inserción</label>
+                        <input type="date" id="fechaInsercion" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="tipo">Tipo</label>
+                        <input type="text" id="tipo" class="form-control" maxlength="50">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="marca">Marca</label>
+                        <input type="text" id="marca" class="form-control" maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label for="modelo">Modelo</label>
+                        <input type="text" id="modelo" class="form-control" maxlength="50">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="personaAsignada">Persona asignada</label>
+                        <input type="text" id="personaAsignada" class="form-control" maxlength="100">
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="observacion">Observación</label>
+                        <textarea id="observacion" class="form-control" rows="3" maxlength="500"></textarea>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fechaDeshab">Fecha Deshab.</label>
+                        <input type="date" id="fechaDeshab" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="estado">Estado</label>
+                        <select id="estado" class="form-control">
+                            <option value="Operativo">Operativo</option>
+                            <option value="Deshabilitado">Deshabilitado</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PDF Export Modal - MODIFICADO PARA CENTRARSE -->
+    <div id="pdfModal" class="modal pdf-modal-container">
+        <div class="pdf-modal-content">
+            <div class="modal-header">
+                <h2>Exportar a PDF</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="form-group">
+                <label>Seleccione las columnas a exportar:</label>
+                <div class="columns-container" id="pdfColumnsContainer">
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="colSerial" checked>
+                        <label for="colSerial">Serial</label>
+                    </div>
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="colColor" checked>
+                        <label for="colColor">Color</label>
+                    </div>
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="colNBien" checked>
+                        <label for="colNBien">N° Bien</label>
+                    </div>
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="colLugar" checked>
+                        <label for="colLugar">Lugar</label>
+                    </div>
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="colFechaInsercion" checked>
+                        <label for="colFechaInsercion">Fecha Inserción</label>
+                    </div>
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="colTipo" checked>
+                        <label for="colTipo">Tipo</label>
+                    </div>
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="colMarca" checked>
+                        <label for="colMarca">Marca</label>
+                    </div>
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="colModelo" checked>
+                        <label for="colModelo">Modelo</label>
+                    </div>
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="colPersona" checked>
+                        <label for="colPersona">Persona asignada</label>
+                    </div>
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="colObservacion" checked>
+                        <label for="colObservacion">Observación</label>
+                    </div>
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="colFechaDeshab" checked>
+                        <label for="colFechaDeshab">Fecha Deshab.</label>
+                    </div>
+                    <div class="column-checkbox">
+                        <input type="checkbox" id="colEstado" checked>
+                        <label for="colEstado">Estado</label>
+                    </div>
+                </div>
+                <label>Seleccione el tipo de exportación:</label>
+                <div class="pdf-export-options">
+                    <button id="exportCurrentPdfBtn" class="btn btn-primary"><i class="fas fa-list"></i> Lista Actual</button>
+                    <button id="exportFilteredPdfBtn" class="btn btn-info"><i class="fas fa-filter"></i> Con Filtros Aplicados</button>
+                    <button id="exportAllPdfBtn" class="btn btn-success"><i class="fas fa-database"></i> Todos los Registros</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Modal -->
+    <div id="filterModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Filtros Avanzados</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="searchSerial">Serial</label>
+                    <input type="text" id="searchSerial" class="form-control" placeholder="Buscar por serial" maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label for="searchColor">Color</label>
+                    <input type="text" id="searchColor" class="form-control" placeholder="Buscar por color" maxlength="50">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="searchNBien">N° Bien</label>
+                    <input type="text" id="searchNBien" class="form-control" placeholder="Buscar por N° Bien" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label for="searchLugar">Lugar</label>
+                    <input type="text" id="searchLugar" class="form-control" placeholder="Buscar por lugar" maxlength="100">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="searchFechaInsercion">Fecha Inserción</label>
+                    <input type="date" id="searchFechaInsercion" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="searchTipo">Tipo</label>
+                    <input type="text" id="searchTipo" class="form-control" placeholder="Buscar por tipo" maxlength="50">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="searchMarca">Marca</label>
+                    <input type="text" id="searchMarca" class="form-control" placeholder="Buscar por marca" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label for="searchModelo">Modelo</label>
+                    <input type="text" id="searchModelo" class="form-control" placeholder="Buscar por modelo" maxlength="50">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="searchPersona">Persona asignada</label>
+                    <input type="text" id="searchPersona" class="form-control" placeholder="Buscar por persona" maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label for="searchObservacion">Observación</label>
+                    <input type="text" id="searchObservacion" class="form-control" placeholder="Buscar por observación" maxlength="500">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="searchFechaDeshab">Fecha Deshab.</label>
+                    <input type="date" id="searchFechaDeshab" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="searchEstado">Estado</label>
+                    <select id="searchEstado" class="form-control">
+                        <option value="">Todos</option>
+                        <option value="Operativo">Operativo</option>
+                        <option value="Deshabilitado">Deshabilitado</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button id="applyFiltersBtn" class="btn btn-primary"><i class="fas fa-filter"></i> Aplicar Filtros</button>
+                <button id="clearFiltersBtn" class="btn btn-warning"><i class="fas fa-times"></i> Limpiar Filtros</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Administrar Usuarios</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div id="userAlert" class="alert" style="display: none;"></div>
+            
+            <div style="text-align: right; margin-bottom: 1rem;">
+                <button id="addUserBtn" class="btn btn-success"><i class="fas fa-plus"></i> Agregar Usuario</button>
+            </div>
+            
+            <div class="table-container">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Rol</th>
+                            <th>Último acceso</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Los usuarios se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit User Modal -->
+    <div id="userFormModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="userFormTitle">Agregar Nuevo Usuario</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div id="userFormAlert" class="alert" style="display: none;"></div>
+            <form id="userForm">
+                <input type="hidden" id="userId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="usernameInput">Usuario *</label>
+                        <input type="text" id="usernameInput" class="form-control" required maxlength="50" pattern="[a-zA-Z0-9_]+" title="Solo letras, números y guiones bajos">
+                    </div>
+                    <div class="form-group">
+                        <label for="userRole">Rol *</label>
+                        <select id="userRole" class="form-control" required>
+                            <option value="Administrador">Administrador</option>
+                            <option value="Empleado">Empleado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row" id="passwordFields">
+                    <div class="form-group">
+                        <label for="passwordInput">Contraseña *</label>
+                        <input type="password" id="passwordInput" class="form-control" required minlength="8" autocomplete="new-password">
+                        <div class="password-strength" id="passwordStrength"></div>
+                        <small>Mínimo 8 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPasswordInput">Confirmar Contraseña *</label>
+                        <input type="password" id="confirmPasswordInput" class="form-control" required autocomplete="new-password">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" id="cancelUserBtn" class="btn btn-warning">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Editar Perfil</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div id="profileAlert" class="alert" style="display: none;"></div>
+            <form id="profileForm">
+                <div class="form-group">
+                    <label for="profileUsername">Usuario</label>
+                    <input type="text" id="profileUsername" class="form-control" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="currentPassword">Contraseña Actual</label>
+                    <input type="password" id="currentPassword" class="form-control" autocomplete="current-password">
+                </div>
+                <div class="form-group">
+                    <label for="newProfilePassword">Nueva Contraseña</label>
+                    <input type="password" id="newProfilePassword" class="form-control" autocomplete="new-password" minlength="8">
+                    <div class="password-strength" id="newPasswordStrength"></div>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirmar Nueva Contraseña</label>
+                    <input type="password" id="confirmPassword" class="form-control" autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Backup Modal -->
+    <div id="backupModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Copia de Seguridad</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div id="backupAlert" class="alert" style="display: none;"></div>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <button id="createBackupBtn" class="btn btn-success"><i class="fas fa-save"></i> Crear Copia de Seguridad</button>
+                
+                <!-- Botón para restaurar copia de seguridad (solo visible para administradores) -->
+                <div class="file-upload-container" id="restoreBackupContainer" style="display: none;">
+                    <div class="file-input-wrapper">
+                        <div class="file-input-button">
+                            <i class="fas fa-upload"></i> Seleccionar archivo de copia de seguridad
+                        </div>
+                        <input type="file" id="restoreBackupInput" accept=".json">
+                    </div>
+                    <div id="selectedFileName" class="file-name">Ningún archivo seleccionado</div>
+                    <button id="restoreBackupBtn" class="btn btn-warning btn-block" disabled><i class="fas fa-upload"></i> Restaurar desde Copia de Seguridad</button>
+                </div>
+            </div>
+            
+            <h3 style="margin: 2rem 0 1rem;">Copias de Seguridad Existentes</h3>
+            <div class="table-container">
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tamaño</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backupsTableBody">
+                        <!-- Las copias de seguridad se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para fecha de deshabilitación manual -->
+    <div id="disableModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Deshabilitar Elemento</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div id="disableAlert" class="alert alert-error" style="display: none;"></div>
+            <div class="form-group">
+                <label for="disableDate">Fecha de Deshabilitación</label>
+                <input type="date" id="disableDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="disableReason">Motivo de Deshabilitación</label>
+                <textarea id="disableReason" class="form-control" rows="3" placeholder="Ingrese el motivo de la deshabilitación" maxlength="500"></textarea>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button id="confirmDisableBtn" class="btn btn-danger">Confirmar Deshabilitación</button>
+                <button id="cancelDisableBtn" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Configuración de Sincronización -->
+    <div id="syncModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Configuración de Sincronización</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div id="syncAlert" class="alert" style="display: none;"></div>
+            
+            <div class="form-group">
+                <label for="githubToken">Token de GitHub</label>
+                <input type="password" id="githubToken" class="form-control" placeholder="Ingrese su token de acceso personal de GitHub">
+                <small>Necesita un token con permisos de repositorio para sincronizar datos</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="repoName">Nombre del Repositorio</label>
+                <input type="text" id="repoName" class="form-control" placeholder="nombre-usuario/nombre-repositorio" value="mi-usuario/inventario-datos">
+            </div>
+            
+            <div class="form-group">
+                <label for="branchName">Rama</label>
+                <input type="text" id="branchName" class="form-control" placeholder="main" value="main">
+            </div>
+            
+            <div class="form-group">
+                <label for="fileName">Nombre del Archivo</label>
+                <input type="text" id="fileName" class="form-control" placeholder="inventory-data.json" value="inventory-data.json">
+            </div>
+            
+            <div class="form-group">
+                <label for="deviceName">Nombre de este Dispositivo</label>
+                <input type="text" id="deviceName" class="form-control" placeholder="Nombre para identificar este dispositivo">
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button id="testConnectionBtn" class="btn btn-info"><i class="fas fa-plug"></i> Probar Conexión</button>
+                <button id="saveSyncConfigBtn" class="btn btn-success"><i class="fas fa-save"></i> Guardar Configuración</button>
+                <button id="startSyncBtn" class="btn btn-primary"><i class="fas fa-sync"></i> Iniciar Sincronización</button>
+            </div>
+            
+            <div id="connectionStatus" style="margin-top: 1rem; padding: 1rem; border-radius: 5px; display: none;"></div>
+            
+            <h3 style="margin: 2rem 0 1rem;">Dispositivos Sincronizados</h3>
+            <div class="device-list" id="deviceList">
+                <!-- Los dispositivos se cargarán dinámicamente -->
+            </div>
+            
+            <div style="margin-top: 1rem;">
+                <button id="refreshDevicesBtn" class="btn btn-sm btn-info"><i class="fas fa-refresh"></i> Actualizar Lista</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentUser = null;
+        let inventory = [];
+        let users = [];
+        let backups = [];
+        let currentEditingItemId = null;
+        let currentEditingUserId = null;
+        let currentFilters = {};
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let disableItemId = null;
+        let filteredInventory = [];
+        let selectedBackupFile = null;
+        let sessionTimer = null;
+        let inactivityTimer = null;
+        const SESSION_DURATION = 30 * 60; // 30 minutos en segundos
+        const WARNING_TIME = 5 * 60; // 5 minutos en segundos
+        let sessionTimeRemaining = SESSION_DURATION;
+        const encryptionKey = "inventory-system-secure-key-2024"; // Clave para cifrado
+        
+        // Variables para sincronización
+        let syncInterval = null;
+        let isSyncing = false;
+        let deviceId = null;
+        let syncConfig = {
+            githubToken: '',
+            repoName: 'mi-usuario/inventario-datos',
+            branchName: 'main',
+            fileName: 'inventory-data.json',
+            deviceName: ''
+        };
+        let pendingChanges = [];
+        let connectedDevices = {};
+
+        // Elementos del DOM
+        const loginSection = document.getElementById('loginSection');
+        const dashboardSection = document.getElementById('dashboardSection');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginAlert = document.getElementById('loginAlert');
+        const logoPreview = document.getElementById('logoPreview');
+        const headerLogo = document.getElementById('headerLogo');
+        const themeToggle = document.getElementById('themeToggle');
+        const userName = document.getElementById('userName');
+        const editProfileBtn = document.getElementById('editProfileBtn');
+        const uploadLogoBtn = document.getElementById('uploadLogoBtn');
+        const manageUsersBtn = document.getElementById('manageUsersBtn');
+        const syncConfigBtn = document.getElementById('syncConfigBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const generalSearch = document.getElementById('generalSearch');
+        const inventoryTableBody = document.getElementById('inventoryTableBody');
+        const searchBtn = document.getElementById('searchBtn');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const pdfModalBtn = document.getElementById('pdfModalBtn');
+        const exportCurrentPdfBtn = document.getElementById('exportCurrentPdfBtn');
+        const exportFilteredPdfBtn = document.getElementById('exportFilteredPdfBtn');
+        const exportAllPdfBtn = document.getElementById('exportAllPdfBtn');
+        const backupBtn = document.getElementById('backupBtn');
+        const itemModal = document.getElementById('itemModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const itemForm = document.getElementById('itemForm');
+        const modalAlert = document.getElementById('modalAlert');
+        const pdfModal = document.getElementById('pdfModal');
+        const userModal = document.getElementById('userModal');
+        const addUserBtn = document.getElementById('addUserBtn');
+        const userForm = document.getElementById('userForm');
+        const userAlert = document.getElementById('userAlert');
+        const userFormModal = document.getElementById('userFormModal');
+        const userFormTitle = document.getElementById('userFormTitle');
+        const userFormAlert = document.getElementById('userFormAlert');
+        const userId = document.getElementById('userId');
+        const usernameInputField = document.getElementById('usernameInput');
+        const userRole = document.getElementById('userRole');
+        const passwordInputField = document.getElementById('passwordInput');
+        const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+        const passwordFields = document.getElementById('passwordFields');
+        const cancelUserBtn = document.getElementById('cancelUserBtn');
+        const usersTableBody = document.getElementById('usersTableBody');
+        const profileModal = document.getElementById('profileModal');
+        const profileForm = document.getElementById('profileForm');
+        const profileAlert = document.getElementById('profileAlert');
+        const profileUsername = document.getElementById('profileUsername');
+        const backupModal = document.getElementById('backupModal');
+        const backupAlert = document.getElementById('backupAlert');
+        const createBackupBtn = document.getElementById('createBackupBtn');
+        const restoreBackupBtn = document.getElementById('restoreBackupBtn');
+        const restoreBackupInput = document.getElementById('restoreBackupInput');
+        const selectedFileName = document.getElementById('selectedFileName');
+        const backupsTableBody = document.getElementById('backupsTableBody');
+        const paginationContainer = document.getElementById('paginationContainer');
+        const paginationInfo = document.getElementById('paginationInfo');
+        const filterModalBtn = document.getElementById('filterModalBtn');
+        const filterModal = document.getElementById('filterModal');
+        const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+        const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+        const pdfColumnsContainer = document.getElementById('pdfColumnsContainer');
+        const disableModal = document.getElementById('disableModal');
+        const disableDate = document.getElementById('disableDate');
+        const disableReason = document.getElementById('disableReason');
+        const confirmDisableBtn = document.getElementById('confirmDisableBtn');
+        const cancelDisableBtn = document.getElementById('cancelDisableBtn');
+        const disableAlert = document.getElementById('disableAlert');
+        const toastContainer = document.getElementById('toastContainer');
+        const confirmationModal = document.getElementById('confirmationModal');
+        const confirmationTitle = document.getElementById('confirmationTitle');
+        const confirmationMessage = document.getElementById('confirmationMessage');
+        const confirmYes = document.getElementById('confirmYes');
+        const confirmNo = document.getElementById('confirmNo');
+        const sessionTimeoutWarning = document.getElementById('sessionTimeoutWarning');
+        const timeoutCountdown = document.getElementById('timeoutCountdown');
+        const extendSessionBtn = document.getElementById('extendSessionBtn');
+        const sessionTimeRemainingElement = document.getElementById('sessionTimeRemaining');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const newPasswordStrength = document.getElementById('newPasswordStrength');
+        const restoreBackupContainer = document.getElementById('restoreBackupContainer');
+        
+        // Elementos de sincronización
+        const syncStatus = document.getElementById('syncStatus');
+        const syncIndicator = document.getElementById('syncIndicator');
+        const syncStatusText = document.getElementById('syncStatusText');
+        const syncModal = document.getElementById('syncModal');
+        const syncAlert = document.getElementById('syncAlert');
+        const githubToken = document.getElementById('githubToken');
+        const repoName = document.getElementById('repoName');
+        const branchName = document.getElementById('branchName');
+        const fileName = document.getElementById('fileName');
+        const deviceName = document.getElementById('deviceName');
+        const testConnectionBtn = document.getElementById('testConnectionBtn');
+        const saveSyncConfigBtn = document.getElementById('saveSyncConfigBtn');
+        const startSyncBtn = document.getElementById('startSyncBtn');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const deviceList = document.getElementById('deviceList');
+        const refreshDevicesBtn = document.getElementById('refreshDevicesBtn');
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        function initializeApp() {
+            // Cargar datos del localStorage
+            loadData();
+            
+            // Verificar si hay un usuario logueado
+            checkLoggedIn();
+            
+            // Configurar event listeners
+            setupEventListeners();
+            
+            // Aplicar tema guardado
+            applySavedTheme();
+            
+            // Configurar monitoreo de inactividad
+            setupInactivityMonitoring();
+            
+            // Generar ID único para este dispositivo
+            deviceId = localStorage.getItem('inventory_deviceId');
+            if (!deviceId) {
+                deviceId = generateId();
+                localStorage.setItem('inventory_deviceId', deviceId);
+            }
+            
+            // Cargar configuración de sincronización
+            loadSyncConfig();
+        }
+
+        function loadData() {
+            // Cargar usuarios
+            const usersData = localStorage.getItem('inventory_users');
+            if (usersData) {
+                try {
+                    const decryptedUsers = decryptData(usersData);
+                    users = JSON.parse(decryptedUsers);
+                } catch (e) {
+                    console.error('Error parsing users data:', e);
+                    users = [];
+                }
+            }
+            
+            // Si no hay usuarios, crear el usuario por defecto
+            if (users.length === 0) {
+                createDefaultUser();
+            }
+            
+            // Cargar inventario
+            const inventoryData = localStorage.getItem('inventory_data');
+            if (inventoryData) {
+                try {
+                    const decryptedInventory = decryptData(inventoryData);
+                    inventory = JSON.parse(decryptedInventory);
+                    filteredInventory = [...inventory];
+                } catch (e) {
+                    console.error('Error parsing inventory data:', e);
+                    inventory = [];
+                    filteredInventory = [];
+                }
+            }
+            
+            // Cargar copias de seguridad
+            const backupsData = localStorage.getItem('inventory_backups');
+            if (backupsData) {
+                try {
+                    backups = JSON.parse(backupsData);
+                } catch (e) {
+                    console.error('Error parsing backups data:', e);
+                    backups = [];
+                }
+            }
+            
+            // Cargar logo si existe
+            const logoData = localStorage.getItem('inventory_logo');
+            if (logoData) {
+                logoPreview.src = logoData;
+                headerLogo.src = logoData;
+            }
+            
+            // Cargar cambios pendientes de sincronización
+            const pendingChangesData = localStorage.getItem('inventory_pendingChanges');
+            if (pendingChangesData) {
+                try {
+                    pendingChanges = JSON.parse(pendingChangesData);
+                } catch (e) {
+                    console.error('Error parsing pending changes:', e);
+                    pendingChanges = [];
+                }
+            }
+            
+            // Cargar dispositivos conectados
+            const connectedDevicesData = localStorage.getItem('inventory_connectedDevices');
+            if (connectedDevicesData) {
+                try {
+                    connectedDevices = JSON.parse(connectedDevicesData);
+                } catch (e) {
+                    console.error('Error parsing connected devices:', e);
+                    connectedDevices = {};
+                }
+            }
+        }
+
+        function loadSyncConfig() {
+            const configData = localStorage.getItem('inventory_syncConfig');
+            if (configData) {
+                try {
+                    syncConfig = JSON.parse(configData);
+                    githubToken.value = syncConfig.githubToken;
+                    repoName.value = syncConfig.repoName;
+                    branchName.value = syncConfig.branchName;
+                    fileName.value = syncConfig.fileName;
+                    deviceName.value = syncConfig.deviceName;
+                } catch (e) {
+                    console.error('Error parsing sync config:', e);
+                }
+            }
+        }
+
+        function saveSyncConfig() {
+            localStorage.setItem('inventory_syncConfig', JSON.stringify(syncConfig));
+        }
+
+        function createDefaultUser() {
+            // Crear usuario administrador por defecto con contraseña más segura
+            const defaultUser = {
+                id: generateId(),
+                username: 'Coordinador',
+                password: hashPassword('TIC@2023Seguro!'),
+                role: 'Administrador',
+                lastLogin: null,
+                createdAt: new Date().toISOString()
+            };
+            
+            users.push(defaultUser);
+            saveUsers();
+        }
+
+        function checkLoggedIn() {
+            const loggedInUser = localStorage.getItem('inventory_loggedInUser');
+            if (loggedInUser) {
+                try {
+                    const decryptedUser = decryptData(loggedInUser);
+                    currentUser = JSON.parse(decryptedUser);
+                    
+                    // Verificar si la sesión ha expirado
+                    const loginTime = localStorage.getItem('inventory_loginTime');
+                    if (loginTime && (Date.now() - parseInt(loginTime)) > (SESSION_DURATION * 1000)) {
+                        showToast('Su sesión ha expirado', 'info');
+                        logout();
+                    } else {
+                        showDashboard();
+                        startSessionTimer();
+                    }
+                } catch (e) {
+                    console.error('Error parsing logged in user:', e);
+                    logout();
+                }
+            }
+        }
+
+        function setupEventListeners() {
+            // Login
+            loginBtn.addEventListener('click', handleLogin);
+            
+            // Dashboard
+            themeToggle.addEventListener('change', toggleTheme);
+            editProfileBtn.addEventListener('click', showProfileModal);
+            uploadLogoBtn.addEventListener('click', triggerLogoUpload);
+            manageUsersBtn.addEventListener('click', showUserModal);
+            syncConfigBtn.addEventListener('click', showSyncModal);
+            logoutBtn.addEventListener('click', logout);
+            
+            // Search and filters
+            generalSearch.addEventListener('input', debounce(filterInventory, 300));
+            searchBtn.addEventListener('click', filterInventory);
+            clearSearchBtn.addEventListener('click', clearSearch);
+            
+            // Inventory management
+            addItemBtn.addEventListener('click', showAddItemModal);
+            pdfModalBtn.addEventListener('click', () => pdfModal.style.display = 'flex'); // Cambiado a flex para centrar
+            exportCurrentPdfBtn.addEventListener('click', () => { pdfModal.style.display = 'none'; exportToPdf('current'); });
+            exportFilteredPdfBtn.addEventListener('click', () => { pdfModal.style.display = 'none'; exportToPdf('filtered'); });
+            exportAllPdfBtn.addEventListener('click', () => { pdfModal.style.display = 'none'; exportToPdf('all'); });
+            backupBtn.addEventListener('click', showBackupModal);
+            
+            // Filter modal
+            filterModalBtn.addEventListener('click', () => filterModal.style.display = 'block');
+            applyFiltersBtn.addEventListener('click', applyAdvancedFilters);
+            clearFiltersBtn.addEventListener('click', clearAdvancedFilters);
+            
+            // Confirmation modal
+            confirmNo.addEventListener('click', () => {
+                confirmationModal.style.display = 'none';
+            });
+            
+            // Extender sesión
+            extendSessionBtn.addEventListener('click', extendSession);
+            
+            // Validación de fortaleza de contraseña
+            passwordInputField.addEventListener('input', checkPasswordStrength);
+            document.getElementById('newProfilePassword').addEventListener('input', checkNewPasswordStrength);
+            
+            // Modals
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                modal.querySelector('.close').addEventListener('click', () => {
+                    modal.style.display = 'none';
+                });
+            });
+            
+            window.addEventListener('click', (e) => {
+                modals.forEach(modal => {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Item form
+            itemForm.addEventListener('submit', handleItemSubmit);
+            
+            // User management
+            addUserBtn.addEventListener('click', showAddUserModal);
+            userForm.addEventListener('submit', handleUserSubmit);
+            cancelUserBtn.addEventListener('click', () => {
+                userFormModal.style.display = 'none';
+            });
+            
+            // Profile management
+            profileForm.addEventListener('submit', handleProfileSubmit);
+            
+            // Backup management
+            createBackupBtn.addEventListener('click', createBackup);
+            
+            // Restaurar copia de seguridad
+            restoreBackupInput.addEventListener('change', handleFileSelection);
+            restoreBackupBtn.addEventListener('click', handleRestoreBackup);
+            
+            // Modal de deshabilitación
+            confirmDisableBtn.addEventListener('click', confirmDisableItem);
+            cancelDisableBtn.addEventListener('click', () => {
+                disableModal.style.display = 'none';
+            });
+            
+            // Sincronización
+            testConnectionBtn.addEventListener('click', testGithubConnection);
+            saveSyncConfigBtn.addEventListener('click', saveSyncConfiguration);
+            startSyncBtn.addEventListener('click', toggleSync);
+            refreshDevicesBtn.addEventListener('click', refreshDevicesList);
+            
+            // Monitorear actividad del usuario
+            document.addEventListener('mousemove', resetInactivityTimer);
+            document.addEventListener('keypress', resetInactivityTimer);
+            document.addEventListener('click', resetInactivityTimer);
+            document.addEventListener('scroll', resetInactivityTimer);
+        }
+
+        function setupInactivityMonitoring() {
+            resetInactivityTimer();
+        }
+
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(() => {
+                // Mostrar advertencia de inactividad
+                if (currentUser && dashboardSection.style.display === 'block') {
+                    sessionTimeoutWarning.style.display = 'block';
+                    
+                    let countdown = 120; // 2 minutos en segundos
+                    const countdownInterval = setInterval(() => {
+                        countdown--;
+                        const minutes = Math.floor(countdown / 60);
+                        const seconds = countdown % 60;
+                        timeoutCountdown.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                        
+                        if (countdown <= 0) {
+                            clearInterval(countdownInterval);
+                            logout();
+                        }
+                    }, 1000);
+                }
+            }, (SESSION_DURATION - WARNING_TIME) * 1000); // Mostrar advertencia 5 minutos antes
+        }
+
+        function extendSession() {
+            sessionTimeoutWarning.style.display = 'none';
+            resetInactivityTimer();
+            startSessionTimer();
+            showToast('Sesión extendida', 'success');
+        }
+
+        function startSessionTimer() {
+            clearInterval(sessionTimer);
+            sessionTimeRemaining = SESSION_DURATION;
+            updateSessionTimerDisplay();
+            
+            sessionTimer = setInterval(() => {
+                sessionTimeRemaining--;
+                updateSessionTimerDisplay();
+                
+                if (sessionTimeRemaining <= 0) {
+                    clearInterval(sessionTimer);
+                    logout();
+                    showToast('Su sesión ha expirado', 'info');
+                }
+            }, 1000);
+            
+            // Guardar tiempo de inicio de sesión
+            localStorage.setItem('inventory_loginTime', Date.now().toString());
+        }
+
+        function updateSessionTimerDisplay() {
+            const minutes = Math.floor(sessionTimeRemaining / 60);
+            const seconds = sessionTimeRemaining % 60;
+            sessionTimeRemainingElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function handleLogin() {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            
+            if (!username || !password) {
+                showAlert(loginAlert, 'Por favor, complete todos los campos', 'error');
+                return;
+            }
+            
+            // Sanitizar entrada
+            const sanitizedUsername = sanitizeInput(username);
+            const user = users.find(u => u.username === sanitizedUsername && u.password === hashPassword(password));
+            
+            if (user) {
+                // Actualizar último acceso
+                user.lastLogin = new Date().toISOString();
+                saveUsers();
+                
+                currentUser = user;
+                const encryptedUser = encryptData(JSON.stringify(user));
+                localStorage.setItem('inventory_loggedInUser', encryptedUser);
+                showDashboard();
+                startSessionTimer();
+                showToast('Inicio de sesión exitoso', 'success');
+                
+                // Limpiar campos de login
+                usernameInput.value = '';
+                passwordInput.value = '';
+            } else {
+                showAlert(loginAlert, 'Usuario o contraseña incorrectos', 'error');
+                showToast('Usuario o contraseña incorrectos', 'error');
+                
+                // Medida de seguridad: introducir un pequeño retraso para evitar ataques de fuerza bruta
+                setTimeout(() => {
+                    loginBtn.disabled = false;
+                }, 1000);
+            }
+        }
+
+        function triggerLogoUpload() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    // Validar tipo y tamaño de archivo
+                    if (!file.type.startsWith('image/')) {
+                        showToast('Por favor, seleccione un archivo de imagen válido', 'error');
+                        return;
+                    }
+                    
+                    if (file.size > 2 * 1024 * 1024) { // 2MB máximo
+                        showToast('La imagen no debe exceder los 2MB', 'error');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const logoData = event.target.result;
+                        localStorage.setItem('inventory_logo', logoData);
+                        logoPreview.src = logoData;
+                        headerLogo.src = logoData;
+                        showToast('Logo actualizado correctamente', 'success');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        }
+
+        function showDashboard() {
+            loginSection.style.display = 'none';
+            dashboardSection.style.display = 'block';
+            
+            userName.textContent = currentUser.username;
+            
+            // Mostrar u ocultar funcionalidades según el rol
+            if (currentUser.role === 'Administrador') {
+                manageUsersBtn.style.display = 'block';
+                uploadLogoBtn.style.display = 'block';
+                syncConfigBtn.style.display = 'block';
+                syncStatus.style.display = 'flex';
+            } else {
+                manageUsersBtn.style.display = 'none';
+                uploadLogoBtn.style.display = 'none';
+                syncConfigBtn.style.display = 'none';
+                syncStatus.style.display = 'none';
+            }
+            
+            renderInventoryTable();
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('inventory_theme', themeToggle.checked ? 'dark' : 'light');
+        }
+
+        function applySavedTheme() {
+            const savedTheme = localStorage.getItem('inventory_theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                themeToggle.checked = true;
+            }
+        }
+
+        function logout() {
+            clearInterval(sessionTimer);
+            clearTimeout(inactivityTimer);
+            sessionTimeoutWarning.style.display = 'none';
+            
+            // Detener sincronización si está activa
+            if (isSyncing) {
+                stopSync();
+            }
+            
+            currentUser = null;
+            localStorage.removeItem('inventory_loggedInUser');
+            localStorage.removeItem('inventory_loginTime');
+            loginSection.style.display = 'flex';
+            dashboardSection.style.display = 'none';
+            usernameInput.value = '';
+            passwordInput.value = '';
+            loginAlert.style.display = 'none';
+            showToast('Sesión cerrada correctamente', 'info');
+        }
+
+        function renderInventoryTable(items = filteredInventory) {
+            inventoryTableBody.innerHTML = '';
+            
+            if (items.length === 0) {
+                inventoryTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="13" style="text-align: center;">No hay elementos en el inventario</td>
+                    </tr>
+                `;
+                paginationContainer.innerHTML = '';
+                paginationInfo.innerHTML = '';
+                return;
+            }
+            
+            // Calcular paginación
+            const totalPages = Math.ceil(items.length / itemsPerPage);
+            
+            // Ajustar la página actual si es necesario
+            if (currentPage > totalPages) {
+                currentPage = totalPages > 0 ? totalPages : 1;
+            }
+            
+            // Obtener elementos para la página actual
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, items.length);
+            const pageItems = items.slice(startIndex, endIndex);
+            
+            // Renderizar elementos (sanitizando la salida)
+            pageItems.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${sanitizeOutput(item.serial)}</td>
+                    <td>${sanitizeOutput(item.color) || '-'}</td>
+                    <td>${sanitizeOutput(item.nBien)}</td>
+                    <td>${sanitizeOutput(item.lugar) || '-'}</td>
+                    <td>${formatDate(item.fechaInsercion) || '-'}</td>
+                    <td>${sanitizeOutput(item.tipo) || '-'}</td>
+                    <td>${sanitizeOutput(item.marca) || '-'}</td>
+                    <td>${sanitizeOutput(item.modelo) || '-'}</td>
+                    <td>${sanitizeOutput(item.personaAsignada) || '-'}</td>
+                    <td>${sanitizeOutput(item.observacion) || '-'}</td>
+                    <td>${formatDate(item.fechaDeshab) || '-'}</td>
+                    <td>
+                        <span class="status-badge status-${item.estado.toLowerCase()}">${item.estado}</span>
+                    </td>
+                    <td class="action-buttons">
+                        <button class="btn btn-primary btn-sm edit-btn" data-id="${item.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-sm delete-btn" data-id="${item.id}"><i class="fas fa-trash"></i></button>
+                        ${item.estado === 'Operativo' ? 
+                            `<button class="btn btn-warning btn-sm disable-btn" data-id="${item.id}"><i class="fas fa-ban"></i></button>` : 
+                            `<button class="btn btn-success btn-sm enable-btn" data-id="${item.id}"><i class="fas fa-check"></i></button>`
+                        }
+                    </td>
+                `;
+                inventoryTableBody.appendChild(row);
+            });
+            
+            // Renderizar paginación
+            renderPagination(totalPages);
+            
+            // Actualizar información de paginación
+            updatePaginationInfo(items.length, startIndex, endIndex);
+            
+            // Agregar event listeners a los botones
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    showEditItemModal(id);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    confirmDeleteItem(id);
+                });
+            });
+            
+            document.querySelectorAll('.disable-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    showDisableModal(id);
+                });
+            });
+            
+            document.querySelectorAll('.enable-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    enableItem(id);
+                });
+            });
+        }
+
+        function renderPagination(totalPages) {
+            paginationContainer.innerHTML = '';
+            
+            if (totalPages <= 1) return;
+            
+            // Botón Anterior
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'pagination-btn';
+            prevBtn.innerHTML = '&laquo;';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderInventoryTable();
+                }
+            });
+            paginationContainer.appendChild(prevBtn);
+            
+            // Botones de página
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            // Ajustar si estamos cerca del final
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            // Primera página si no está visible
+            if (startPage > 1) {
+                const firstPageBtn = document.createElement('button');
+                firstPageBtn.className = 'pagination-btn';
+                firstPageBtn.textContent = '1';
+                firstPageBtn.addEventListener('click', () => {
+                    currentPage = 1;
+                    renderInventoryTable();
+                });
+                paginationContainer.appendChild(firstPageBtn);
+                
+                if (startPage > 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.className = 'pagination-ellipsis';
+                    ellipsis.textContent = '...';
+                    paginationContainer.appendChild(ellipsis);
+                }
+            }
+            
+            // Páginas visibles
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.addEventListener('click', () => {
+                    currentPage = i;
+                    renderInventoryTable();
+                });
+                paginationContainer.appendChild(pageBtn);
+            }
+            
+            // Última página si no está visible
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.className = 'pagination-ellipsis';
+                    ellipsis.textContent = '...';
+                    paginationContainer.appendChild(ellipsis);
+                }
+                
+                const lastPageBtn = document.createElement('button');
+                lastPageBtn.className = 'pagination-btn';
+                lastPageBtn.textContent = totalPages;
+                lastPageBtn.addEventListener('click', () => {
+                    currentPage = totalPages;
+                    renderInventoryTable();
+                });
+                paginationContainer.appendChild(lastPageBtn);
+            }
+            
+            // Botón Siguiente
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'pagination-btn';
+            nextBtn.innerHTML = '&raquo;';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderInventoryTable();
+                }
+            });
+            paginationContainer.appendChild(nextBtn);
+        }
+
+        function updatePaginationInfo(totalItems, startIndex, endIndex) {
+            paginationInfo.textContent = `Mostrando ${startIndex + 1} a ${endIndex} de ${totalItems} elementos`;
+        }
+
+        function filterInventory() {
+            const searchTerm = sanitizeInput(generalSearch.value.toLowerCase());
+            
+            filteredInventory = inventory.filter(item => {
+                const matchesSearch = searchTerm === '' || 
+                    sanitizeOutput(item.serial).toLowerCase().includes(searchTerm) ||
+                    sanitizeOutput(item.nBien).toLowerCase().includes(searchTerm) ||
+                    (item.personaAsignada && sanitizeOutput(item.personaAsignada).toLowerCase().includes(searchTerm)) ||
+                    (item.lugar && sanitizeOutput(item.lugar).toLowerCase().includes(searchTerm)) ||
+                    (item.tipo && sanitizeOutput(item.tipo).toLowerCase().includes(searchTerm)) ||
+                    (item.marca && sanitizeOutput(item.marca).toLowerCase().includes(searchTerm)) ||
+                    (item.modelo && sanitizeOutput(item.modelo).toLowerCase().includes(searchTerm)) ||
+                    (item.color && sanitizeOutput(item.color).toLowerCase().includes(searchTerm)) ||
+                    (item.observacion && sanitizeOutput(item.observacion).toLowerCase().includes(searchTerm));
+                
+                const matchesFilters = Object.keys(currentFilters).every(key => {
+                    if (!currentFilters[key]) return true;
+                    
+                    const filterValue = currentFilters[key].toString().toLowerCase();
+                    const itemValue = item[key] ? item[key].toString().toLowerCase() : '';
+                    
+                    switch(key) {
+                        case 'serial':
+                        case 'color':
+                        case 'nBien':
+                        case 'lugar':
+                        case 'tipo':
+                        case 'marca':
+                        case 'modelo':
+                        case 'personaAsignada':
+                        case 'observacion':
+                            return itemValue.includes(filterValue);
+                        case 'fechaInsercion':
+                        case 'fechaDeshab':
+                            return item[key] === currentFilters[key];
+                        case 'estado':
+                            return item[key] === currentFilters[key];
+                        default:
+                            return true;
+                    }
+                });
+                
+                return matchesSearch && matchesFilters;
+            });
+            
+            renderInventoryTable();
+        }
+
+        function applyAdvancedFilters() {
+            currentFilters = {
+                serial: sanitizeInput(document.getElementById('searchSerial').value),
+                color: sanitizeInput(document.getElementById('searchColor').value),
+                nBien: sanitizeInput(document.getElementById('searchNBien').value),
+                lugar: sanitizeInput(document.getElementById('searchLugar').value),
+                fechaInsercion: document.getElementById('searchFechaInsercion').value,
+                tipo: sanitizeInput(document.getElementById('searchTipo').value),
+                marca: sanitizeInput(document.getElementById('searchMarca').value),
+                modelo: sanitizeInput(document.getElementById('searchModelo').value),
+                personaAsignada: sanitizeInput(document.getElementById('searchPersona').value),
+                observacion: sanitizeInput(document.getElementById('searchObservacion').value),
+                fechaDeshab: document.getElementById('searchFechaDeshab').value,
+                estado: document.getElementById('searchEstado').value
+            };
+            
+            filterModal.style.display = 'none';
+            filterInventory();
+            showToast('Filtros aplicados correctamente', 'success');
+        }
+
+        function clearAdvancedFilters() {
+            document.getElementById('searchSerial').value = '';
+            document.getElementById('searchColor').value = '';
+            document.getElementById('searchNBien').value = '';
+            document.getElementById('searchLugar').value = '';
+            document.getElementById('searchFechaInsercion').value = '';
+            document.getElementById('searchTipo').value = '';
+            document.getElementById('searchMarca').value = '';
+            document.getElementById('searchModelo').value = '';
+            document.getElementById('searchPersona').value = '';
+            document.getElementById('searchObservacion').value = '';
+            document.getElementById('searchFechaDeshab').value = '';
+            document.getElementById('searchEstado').value = '';
+            
+            currentFilters = {};
+            filteredInventory = [...inventory];
+            renderInventoryTable();
+            showToast('Filtros limpiados correctamente', 'info');
+        }
+
+        function clearSearch() {
+            generalSearch.value = '';
+            currentFilters = {};
+            filteredInventory = [...inventory];
+            currentPage = 1;
+            renderInventoryTable();
+            showToast('Búsqueda limpiada', 'info');
+        }
+
+        function showAddItemModal() {
+            modalTitle.textContent = 'Agregar Nuevo Elemento';
+            itemForm.reset();
+            document.getElementById('itemId').value = '';
+            document.getElementById('fechaInsercion').value = new Date().toISOString().split('T')[0];
+            modalAlert.style.display = 'none';
+            itemModal.style.display = 'block';
+        }
+
+        function showEditItemModal(id) {
+            const item = inventory.find(i => i.id === id);
+            if (!item) return;
+            
+            modalTitle.textContent = 'Editar Elemento';
+            document.getElementById('itemId').value = item.id;
+            document.getElementById('serial').value = sanitizeOutput(item.serial);
+            document.getElementById('color').value = sanitizeOutput(item.color || '');
+            document.getElementById('nBien').value = sanitizeOutput(item.nBien);
+            document.getElementById('lugar').value = sanitizeOutput(item.lugar || '');
+            document.getElementById('fechaInsercion').value = item.fechaInsercion || '';
+            document.getElementById('tipo').value = sanitizeOutput(item.tipo || '');
+            document.getElementById('marca').value = sanitizeOutput(item.marca || '');
+            document.getElementById('modelo').value = sanitizeOutput(item.modelo || '');
+            document.getElementById('personaAsignada').value = sanitizeOutput(item.personaAsignada || '');
+            document.getElementById('observacion').value = sanitizeOutput(item.observacion || '');
+            document.getElementById('fechaDeshab').value = item.fechaDeshab || '';
+            document.getElementById('estado').value = item.estado;
+            
+            modalAlert.style.display = 'none';
+            itemModal.style.display = 'block';
+        }
+
+        function showDisableModal(id) {
+            disableItemId = id;
+            disableDate.value = new Date().toISOString().split('T')[0];
+            disableReason.value = '';
+            disableAlert.style.display = 'none';
+            disableModal.style.display = 'block';
+        }
+
+        function confirmDeleteItem(id) {
+            const item = inventory.find(i => i.id === id);
+            if (!item) return;
+            
+            confirmationTitle.textContent = 'Confirmar Eliminación';
+            confirmationMessage.textContent = `¿Está seguro de que desea eliminar el elemento con serial "${sanitizeOutput(item.serial)}"? Esta acción no se puede deshacer.`;
+            
+            confirmationModal.style.display = 'block';
+            
+            // Configurar evento para el botón de confirmación
+            confirmYes.onclick = function() {
+                deleteItem(id);
+                confirmationModal.style.display = 'none';
+            };
+        }
+
+        function confirmDisableItem() {
+            if (!disableDate.value) {
+                showAlert(disableAlert, 'Por favor, seleccione una fecha', 'error');
+                return;
+            }
+            
+            const item = inventory.find(i => i.id === disableItemId);
+            if (item) {
+                item.fechaDeshab = disableDate.value;
+                item.estado = 'Deshabilitado';
+                
+                // Agregar motivo si se proporcionó
+                if (disableReason.value.trim()) {
+                    const sanitizedReason = sanitizeInput(disableReason.value.trim());
+                    item.observacion = item.observacion ? 
+                        `${item.observacion} | Motivo deshabilitación: ${sanitizedReason}` : 
+                        `Motivo deshabilitación: ${sanitizedReason}`;
+                }
+                
+                saveInventory();
+                filterInventory();
+                disableModal.style.display = 'none';
+                
+                showToast('Elemento deshabilitado correctamente', 'success');
+            }
+        }
+
+        function handleItemSubmit(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('itemId').value;
+            const serial = sanitizeInput(document.getElementById('serial').value.trim());
+            const nBien = sanitizeInput(document.getElementById('nBien').value.trim());
+            
+            // Validar campos obligatorios
+            if (!serial || !nBien) {
+                showAlert(modalAlert, 'Los campos Serial and N° Bien son obligatorios', 'error');
+                return;
+            }
+            
+            // Validar que el serial no esté duplicado (excepto para la edición actual)
+            const serialExists = inventory.some(item => item.serial === serial && item.id !== id);
+            if (serialExists) {
+                showAlert(modalAlert, 'El serial ya existe en el inventario', 'error');
+                return;
+            }
+            
+            // Validar que el N° Bien no esté duplicado (excepto para la edición actual)
+            const nBienExists = inventory.some(item => item.nBien === nBien && item.id !== id);
+            if (nBienExists) {
+                showAlert(modalAlert, 'El N° Bien ya existe en el inventario', 'error');
+                return;
+            }
+            
+            const item = {
+                id: id || generateId(),
+                serial,
+                color: sanitizeInput(document.getElementById('color').value.trim()),
+                nBien,
+                lugar: sanitizeInput(document.getElementById('lugar').value.trim()),
+                fechaInsercion: document.getElementById('fechaInsercion').value,
+                tipo: sanitizeInput(document.getElementById('tipo').value.trim()),
+                marca: sanitizeInput(document.getElementById('marca').value.trim()),
+                modelo: sanitizeInput(document.getElementById('modelo').value.trim()),
+                personaAsignada: sanitizeInput(document.getElementById('personaAsignada').value.trim()),
+                observacion: sanitizeInput(document.getElementById('observacion').value.trim()),
+                fechaDeshab: document.getElementById('fechaDeshab').value,
+                estado: document.getElementById('estado').value,
+                // Campos para sincronización
+                deviceId: deviceId,
+                lastModified: new Date().toISOString(),
+                approved: currentUser.role === 'Administrador' // Si es administrador, se aprueba automáticamente
+            };
+            
+            if (id) {
+                // Editar elemento existente
+                const index = inventory.findIndex(i => i.id === id);
+                if (index !== -1) {
+                    // Registrar cambio para sincronización
+                    addPendingChange({
+                        type: 'update',
+                        data: item,
+                        timestamp: new Date().toISOString(),
+                        deviceId: deviceId
+                    });
+                    
+                    inventory[index] = item;
+                    showToast('Elemento actualizado correctamente', 'success');
+                }
+            } else {
+                // Agregar nuevo elemento
+                // Registrar cambio para sincronización
+                addPendingChange({
+                    type: 'create',
+                    data: item,
+                    timestamp: new Date().toISOString(),
+                    deviceId: deviceId
+                });
+                
+                inventory.push(item);
+                showToast('Elemento agregado correctamente', 'success');
+            }
+            
+            saveInventory();
+            filterInventory();
+            itemModal.style.display = 'none';
+        }
+
+        function deleteItem(id) {
+            const item = inventory.find(i => i.id === id);
+            if (item) {
+                // Registrar cambio para sincronización
+                addPendingChange({
+                    type: 'delete',
+                    data: { id: id },
+                    timestamp: new Date().toISOString(),
+                    deviceId: deviceId
+                });
+            }
+            
+            inventory = inventory.filter(item => item.id !== id);
+            saveInventory();
+            filterInventory();
+            
+            showToast('Elemento eliminado correctamente', 'success');
+        }
+
+        function enableItem(id) {
+            const item = inventory.find(i => i.id === id);
+            if (item) {
+                item.fechaDeshab = '';
+                item.estado = 'Operativo';
+                
+                // Registrar cambio para sincronización
+                addPendingChange({
+                    type: 'update',
+                    data: item,
+                    timestamp: new Date().toISOString(),
+                    deviceId: deviceId
+                });
+                
+                saveInventory();
+                filterInventory();
+                
+                showToast('Elemento habilitado correctamente', 'success');
+            }
+        }
+
+        function showUserModal() {
+            if (currentUser.role !== 'Administrador') {
+                showToast('No tiene permisos para administrar usuarios', 'error');
+                return;
+            }
+            
+            renderUsersTable();
+            userAlert.style.display = 'none';
+            userModal.style.display = 'block';
+        }
+
+        function showAddUserModal() {
+            userFormTitle.textContent = 'Agregar Nuevo Usuario';
+            userForm.reset();
+            userId.value = '';
+            passwordFields.style.display = 'grid';
+            userFormAlert.style.display = 'none';
+            userFormModal.style.display = 'block';
+        }
+
+        function showEditUserModal(id) {
+            const user = users.find(u => u.id === id);
+            if (!user) return;
+            
+            userFormTitle.textContent = 'Editar Usuario';
+            userId.value = user.id;
+            usernameInputField.value = sanitizeOutput(user.username);
+            userRole.value = user.role;
+            passwordFields.style.display = 'none';
+            userFormAlert.style.display = 'none';
+            userFormModal.style.display = 'block';
+        }
+
+        function renderUsersTable() {
+            usersTableBody.innerHTML = '';
+            
+            users.forEach(user => {
+                if (user.id === currentUser.id) return; // No mostrar el usuario actual
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${sanitizeOutput(user.username)}</td>
+                    <td>${user.role}</td>
+                    <td>${user.lastLogin ? formatDateTime(user.lastLogin) : 'Nunca'}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-primary btn-sm edit-user-btn" data-id="${user.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-sm delete-user-btn" data-id="${user.id}"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                usersTableBody.appendChild(row);
+            });
+            
+            // Agregar event listeners a los botones
+            document.querySelectorAll('.edit-user-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    showEditUserModal(id);
+                });
+            });
+            
+            document.querySelectorAll('.delete-user-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    confirmDeleteUser(id);
+                });
+            });
+        }
+
+        function confirmDeleteUser(id) {
+            const user = users.find(u => u.id === id);
+            if (!user) return;
+            
+            confirmationTitle.textContent = 'Confirmar Eliminación';
+            confirmationMessage.textContent = `¿Está seguro de que desea eliminar el usuario "${sanitizeOutput(user.username)}"? Esta acción no se puede deshacer.`;
+            
+            confirmationModal.style.display = 'block';
+            
+            // Configurar evento para el botón de confirmación
+            confirmYes.onclick = function() {
+                deleteUser(id);
+                confirmationModal.style.display = 'none';
+            };
+        }
+
+        function handleUserSubmit(e) {
+            e.preventDefault();
+            
+            const id = userId.value;
+            const username = sanitizeInput(usernameInputField.value.trim());
+            const role = userRole.value;
+            
+            if (!username) {
+                showAlert(userFormAlert, 'Por favor, complete todos los campos', 'error');
+                return;
+            }
+            
+            // Validar formato de nombre de usuario
+            const usernameRegex = /^[a-zA-Z0-9_]+$/;
+            if (!usernameRegex.test(username)) {
+                showAlert(userFormAlert, 'El nombre de usuario solo puede contener letras, números y guiones bajos', 'error');
+                return;
+            }
+            
+            // Si es un nuevo usuario, validar contraseña
+            if (!id) {
+                const password = passwordInputField.value;
+                const confirmPassword = confirmPasswordInput.value;
+                
+                if (!password) {
+                    showAlert(userFormAlert, 'Por favor, complete todos los campos', 'error');
+                    return;
+                }
+                
+                if (password !== confirmPassword) {
+                    showAlert(userFormAlert, 'Las contraseñas no coinciden', 'error');
+                    return;
+                }
+                
+                // Validar fortaleza de la contraseña
+                if (!isPasswordStrong(password)) {
+                    showAlert(userFormAlert, 'La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales', 'error');
+                    return;
+                }
+            }
+            
+            // Validar que el usuario no exista (excepto para la edición actual)
+            const userExists = users.some(u => u.username === username && u.id !== id);
+            if (userExists) {
+                showAlert(userFormAlert, 'El usuario ya existe', 'error');
+                return;
+            }
+            
+            if (id) {
+                // Editar usuario existente
+                const user = users.find(u => u.id === id);
+                if (user) {
+                    user.username = username;
+                    user.role = role;
+                    showToast('Usuario actualizado correctamente', 'success');
+                }
+            } else {
+                // Agregar nuevo usuario
+                const password = passwordInputField.value;
+                const user = {
+                    id: generateId(),
+                    username,
+                    password: hashPassword(password),
+                    role,
+                    createdAt: new Date().toISOString(),
+                    lastLogin: null
+                };
+                
+                users.push(user);
+                showToast('Usuario agregado correctamente', 'success');
+            }
+            
+            saveUsers();
+            renderUsersTable();
+            userFormModal.style.display = 'none';
+        }
+
+        function deleteUser(id) {
+            users = users.filter(u => u.id !== id);
+            saveUsers();
+            renderUsersTable();
+            
+            showToast('Usuario eliminado correctamente', 'success');
+        }
+
+        function showProfileModal() {
+            profileUsername.value = currentUser.username;
+            profileAlert.style.display = 'none';
+            profileForm.reset();
+            profileModal.style.display = 'block';
+        }
+
+        function handleProfileSubmit(e) {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newProfilePassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validar contraseña actual si se quiere cambiar la contraseña
+            if (newPassword && hashPassword(currentPassword) !== currentUser.password) {
+                showAlert(profileAlert, 'La contraseña actual es incorrecta', 'error');
+                return;
+            }
+            
+            // Validar que las nuevas contraseñas coincidan
+            if (newPassword && newPassword !== confirmPassword) {
+                showAlert(profileAlert, 'Las nuevas contraseñas no coinciden', 'error');
+                return;
+            }
+            
+            // Validar fortaleza de la nueva contraseña
+            if (newPassword && !isPasswordStrong(newPassword)) {
+                showAlert(profileAlert, 'La nueva contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales', 'error');
+                return;
+            }
+            
+            // Actualizar contraseña si se proporcionó una nueva
+            if (newPassword) {
+                currentUser.password = hashPassword(newPassword);
+                
+                // Actualizar en la lista de usuarios
+                const userIndex = users.findIndex(u => u.id === currentUser.id);
+                if (userIndex !== -1) {
+                    users[userIndex] = currentUser;
+                    saveUsers();
+                    const encryptedUser = encryptData(JSON.stringify(currentUser));
+                    localStorage.setItem('inventory_loggedInUser', encryptedUser);
+                }
+            }
+            
+            profileModal.style.display = 'none';
+            showToast('Perfil actualizado correctamente', 'success');
+        }
+
+        function showBackupModal() {
+            renderBackupsTable();
+            backupAlert.style.display = 'none';
+            backupModal.style.display = 'block';
+            
+            // Mostrar u ocultar la opción de restaurar según el rol
+            if (currentUser.role === 'Administrador') {
+                restoreBackupContainer.style.display = 'block';
+            } else {
+                restoreBackupContainer.style.display = 'none';
+            }
+        }
+
+        function renderBackupsTable() {
+            backupsTableBody.innerHTML = '';
+            
+            if (backups.length === 0) {
+                backupsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align: center;">No hay copias de seguridad</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            backups.forEach(backup => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDateTime(backup.date)}</td>
+                    <td>${formatFileSize(backup.data.length)}</td>
+                    <td class="action-buttons">
+                        ${currentUser.role === 'Administrador' ? 
+                            `<button class="btn btn-primary btn-sm restore-backup-btn" data-date="${backup.date}"><i class="fas fa-undo"></i></button>` : 
+                            ''
+                        }
+                        <button class="btn btn-danger btn-sm delete-backup-btn" data-date="${backup.date}"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                backupsTableBody.appendChild(row);
+            });
+            
+            // Agregar event listeners a los botones
+            document.querySelectorAll('.restore-backup-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const date = e.currentTarget.getAttribute('data-date');
+                    confirmRestoreBackup(date);
+                });
+            });
+            
+            document.querySelectorAll('.delete-backup-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const date = e.currentTarget.getAttribute('data-date');
+                    confirmDeleteBackup(date);
+                });
+            });
+        }
+
+        function confirmRestoreBackup(date) {
+            if (currentUser.role !== 'Administrador') {
+                showToast('No tiene permisos para restaurar copias de seguridad', 'error');
+                return;
+            }
+            
+            confirmationTitle.textContent = 'Confirmar Restauración';
+            confirmationMessage.textContent = '¿Está seguro de que desea restaurar esta copia de seguridad? Se perderán todos los datos actuales.';
+            
+            confirmationModal.style.display = 'block';
+            
+            // Configurar evento para el botón de confirmación
+            confirmYes.onclick = function() {
+                restoreFromBackup(date);
+                confirmationModal.style.display = 'none';
+            };
+        }
+
+        function confirmDeleteBackup(date) {
+            const backup = backups.find(b => b.date === date);
+            if (!backup) return;
+            
+            confirmationTitle.textContent = 'Confirmar Eliminación';
+            confirmationMessage.textContent = `¿Está seguro de que desea eliminar la copia de seguridad del ${formatDateTime(date)}?`;
+            
+            confirmationModal.style.display = 'block';
+            
+            // Configurar evento para el botón de confirmación
+            confirmYes.onclick = function() {
+                deleteBackup(date);
+                confirmationModal.style.display = 'none';
+            };
+        }
+
+        function createBackup() {
+            const backupData = {
+                inventory: inventory,
+                users: users,
+                date: new Date().toISOString()
+            };
+            
+            const compressedData = compressData(backupData);
+            
+            backups.push({
+                date: backupData.date,
+                data: compressedData
+            });
+            
+            saveBackups();
+            renderBackupsTable();
+            
+            showToast('Copia de seguridad creada correctamente', 'success');
+            
+            // Ofrecer descarga
+            const blob = new Blob([compressedData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `inventory_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function handleFileSelection(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // Validar tipo de archivo
+            if (file.type !== 'application/json') {
+                showAlert(backupAlert, 'Por favor, seleccione un archivo JSON válido', 'error');
+                return;
+            }
+            
+            // Validar tamaño de archivo (máximo 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                showAlert(backupAlert, 'El archivo es demasiado grande. El tamaño máximo permitido es 10MB', 'error');
+                return;
+            }
+            
+            selectedBackupFile = file;
+            selectedFileName.textContent = file.name;
+            restoreBackupBtn.disabled = false;
+        }
+
+        function handleRestoreBackup() {
+            if (!selectedBackupFile) {
+                showAlert(backupAlert, 'Por favor, seleccione un archivo de copia de seguridad', 'error');
+                return;
+            }
+            
+            if (currentUser.role !== 'Administrador') {
+                showToast('No tiene permisos para restaurar copias de seguridad', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    let backupData;
+                    let fileContent = event.target.result;
+                    
+                    // Intentar parsear el contenido del archivo
+                    try {
+                        // Primero intentamos como JSON directo
+                        backupData = JSON.parse(fileContent);
+                    } catch (parseError) {
+                        // Si falla, intentamos descomprimir (base64)
+                        try {
+                            backupData = decompressData(fileContent);
+                        } catch (decompressError) {
+                            throw new Error('El archivo no tiene un formato válido. Debe ser un archivo JSON or una copia de seguridad comprimida.');
+                        }
+                    }
+                    
+                    // Validar que sea un archivo de backup válido
+                    if (!backupData || !backupData.inventory || !backupData.users) {
+                        throw new Error('El archivo no es una copia de seguridad válida. Falta inventario o datos de usuarios.');
+                    }
+                    
+                    // Mostrar confirmación antes de restaurar
+                    confirmationTitle.textContent = 'Confirmar Restauración';
+                    confirmationMessage.textContent = '¿Está seguro de que desea restaurar esta copia de seguridad? Se perderán todos los datos actuales.';
+                    
+                    confirmationModal.style.display = 'block';
+                    
+                    // Configurar evento para el botón de confirmación
+                    confirmYes.onclick = function() {
+                        try {
+                            // Restaurar datos
+                            inventory = backupData.inventory;
+                            users = backupData.users;
+                            
+                            // Guardar datos
+                            saveInventory();
+                            saveUsers();
+                            
+                            // Si el usuario actual ya no existe, cerrar sesión
+                            const currentUserExists = users.some(u => u.id === currentUser.id);
+                            if (!currentUserExists) {
+                                showToast('El usuario actual ya no existe en la copia de seguridad. Se cerrará la sesión.', 'error');
+                                setTimeout(() => {
+                                    logout();
+                                }, 3000);
+                                return;
+                            }
+                            
+                            // Actualizar usuario actual
+                            const updatedUser = users.find(u => u.id === currentUser.id);
+                            if (updatedUser) {
+                                currentUser = updatedUser;
+                                const encryptedUser = encryptData(JSON.stringify(currentUser));
+                                localStorage.setItem('inventory_loggedInUser', encryptedUser);
+                                userName.textContent = currentUser.username;
+                            }
+                            
+                            // Actualizar el inventario filtrado
+                            filteredInventory = [...inventory];
+                            renderInventoryTable();
+                            backupModal.style.display = 'none';
+                            
+                            // Reiniciar selección de archivo
+                            selectedBackupFile = null;
+                            selectedFileName.textContent = 'Ningún archivo seleccionado';
+                            restoreBackupBtn.disabled = true;
+                            restoreBackupInput.value = '';
+                            
+                            showToast('Copia de seguridad restaurada correctamente', 'success');
+                        } catch (error) {
+                            console.error('Error restoring backup:', error);
+                            showAlert(backupAlert, 'Error al restaurar la copia de seguridad: ' + error.message, 'error');
+                        }
+                        confirmationModal.style.display = 'none';
+                    };
+                } catch (error) {
+                    console.error('Error processing backup file:', error);
+                    showAlert(backupAlert, 'Error al procesar el archivo: ' + error.message, 'error');
+                }
+            };
+            
+            reader.onerror = function() {
+                showAlert(backupAlert, 'Error al leer el archivo', 'error');
+            };
+            
+            reader.readAsText(selectedBackupFile);
+        }
+
+        function restoreFromBackup(date) {
+            if (currentUser.role !== 'Administrador') {
+                showToast('No tiene permisos para restaurar copias de seguridad', 'error');
+                return;
+            }
+            
+            const backup = backups.find(b => b.date === date);
+            if (!backup) return;
+            
+            try {
+                const backupData = decompressData(backup.data);
+                
+                // Validar que sea un archivo de backup válido
+                if (!backupData.inventory || !backupData.users) {
+                    showAlert(backupAlert, 'La copia de seguridad no es válida', 'error');
+                    return;
+                }
+                
+                // Restaurar datos
+                inventory = backupData.inventory;
+                users = backupData.users;
+                
+                // Guardar datos
+                saveInventory();
+                saveUsers();
+                
+                // Si el usuario actual ya no existe, cerrar sesión
+                const currentUserExists = users.some(u => u.id === currentUser.id);
+                if (!currentUserExists) {
+                    showToast('El usuario actual ya no existe en la copia de seguridad. Se cerrará la sesión.', 'error');
+                    setTimeout(() => {
+                        logout();
+                    }, 3000);
+                    return;
+                }
+                
+                // Actualizar usuario actual
+                const updatedUser = users.find(u => u.id === currentUser.id);
+                if (updatedUser) {
+                    currentUser = updatedUser;
+                    const encryptedUser = encryptData(JSON.stringify(currentUser));
+                    localStorage.setItem('inventory_loggedInUser', encryptedUser);
+                    userName.textContent = currentUser.username;
+                }
+                
+                // Actualizar el inventario filtrado
+                filteredInventory = [...inventory];
+                renderInventoryTable();
+                backupModal.style.display = 'none';
+                
+                showToast('Copia de seguridad restaurada correctamente', 'success');
+            } catch (error) {
+                console.error('Error restoring backup:', error);
+                showAlert(backupAlert, 'Error al restaurar la copia de seguridad', 'error');
+            }
+        }
+
+        function deleteBackup(date) {
+            backups = backups.filter(b => b.date !== date);
+            saveBackups();
+            renderBackupsTable();
+            
+            showToast('Copia de seguridad eliminada correctamente', 'success');
+        }
+
+        function exportToPdf(type) {
+            // Determinar qué datos exportar
+            let dataToExport = [];
+            
+            if (type === 'current') {
+                // Exportar lo que se está viendo actualmente (con paginación)
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, filteredInventory.length);
+                dataToExport = filteredInventory.slice(startIndex, endIndex);
+            } else if (type === 'filtered') {
+                // Aplicar filtros actuales
+                dataToExport = filteredInventory;
+            } else {
+                // Exportar todos los datos
+                dataToExport = inventory;
+            }
+            
+            if (dataToExport.length === 0) {
+                showToast('No hay datos para exportar', 'warning');
+                return;
+            }
+            
+            // Obtener columnas seleccionadas
+            const selectedColumns = [];
+            const columnCheckboxes = pdfColumnsContainer.querySelectorAll('input[type="checkbox"]');
+            
+            columnCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    selectedColumns.push(checkbox.id.replace('col', '').toLowerCase());
+                }
+            });
+            
+            if (selectedColumns.length === 0) {
+                showToast('Seleccione al menos una columna para exportar', 'warning');
+                return;
+            }
+            
+            // Mapear nombres de columnas
+            const columnMap = {
+                'serial': 'Serial',
+                'color': 'Color',
+                'nbien': 'N° Bien',
+                'lugar': 'Lugar',
+                'fechainsercion': 'Fecha Inserción',
+                'tipo': 'Tipo',
+                'marca': 'Marca',
+                'modelo': 'Modelo',
+                'persona': 'Persona asignada',
+                'observacion': 'Observación',
+                'fechadeshab': 'Fecha Deshab.',
+                'estado': 'Estado'
+            };
+            
+            // Preparar datos para la tabla
+            const tableColumn = selectedColumns.map(col => columnMap[col]);
+            const tableRows = [];
+            
+            dataToExport.forEach(item => {
+                const rowData = [];
+                
+                selectedColumns.forEach(col => {
+                    switch(col) {
+                        case 'serial':
+                            rowData.push(sanitizeOutput(item.serial));
+                            break;
+                        case 'color':
+                            rowData.push(sanitizeOutput(item.color) || '-');
+                            break;
+                        case 'nbien':
+                            rowData.push(sanitizeOutput(item.nBien));
+                            break;
+                        case 'lugar':
+                            rowData.push(sanitizeOutput(item.lugar) || '-');
+                            break;
+                        case 'fechainsercion':
+                            rowData.push(formatDate(item.fechaInsercion) || '-');
+                            break;
+                        case 'tipo':
+                            rowData.push(sanitizeOutput(item.tipo) || '-');
+                            break;
+                        case 'marca':
+                            rowData.push(sanitizeOutput(item.marca) || '-');
+                            break;
+                        case 'modelo':
+                            rowData.push(sanitizeOutput(item.modelo) || '-');
+                            break;
+                        case 'persona':
+                            rowData.push(sanitizeOutput(item.personaAsignada) || '-');
+                            break;
+                        case 'observacion':
+                            rowData.push(sanitizeOutput(item.observacion) || '-');
+                            break;
+                        case 'fechadeshab':
+                            rowData.push(formatDate(item.fechaDeshab) || '-');
+                            break;
+                        case 'estado':
+                            rowData.push(item.estado);
+                            break;
+                    }
+                });
+                
+                tableRows.push(rowData);
+            });
+            
+            // Usar jsPDF para generar el PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Agregar logo si existe
+            const logoData = localStorage.getItem('inventory_logo');
+            if (logoData) {
+                doc.addImage(logoData, 'PNG', 14, 10, 30, 30);
+            }
+            
+            // Título
+            doc.setFontSize(20);
+            doc.text('Reporte de Inventario', 105, 25, { align: 'center' });
+            
+            // Fecha de generación
+            doc.setFontSize(12);
+            doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 105, 35, { align: 'center' });
+            
+            // Tipo de exportación
+            doc.setFontSize(10);
+            let exportTypeText = '';
+            if (type === 'current') exportTypeText = 'Lista Actual';
+            else if (type === 'filtered') exportTypeText = 'Con Filtros Aplicados';
+            else exportTypeText = 'Todos los Registros';
+            doc.text(`Tipo: ${exportTypeText}`, 105, 42, { align: 'center' });
+            
+            // Usuario que generó el reporte
+            doc.text(`Usuario: ${currentUser.username}`, 105, 49, { align: 'center' });
+            
+            // Generar PDF
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 55,
+                theme: 'grid',
+                styles: { fontSize: 10 },
+                headStyles: { fillColor: [67, 97, 238] }
+            });
+            
+            // Guardar PDF
+            let fileName = `inventario_${new Date().toISOString().split('T')[0]}`;
+            if (type === 'current') fileName += '_lista_actual';
+            else if (type === 'filtered') fileName += '_filtrado';
+            doc.save(`${fileName}.pdf`);
+            
+            showToast('PDF exportado correctamente', 'success');
+            
+            // Registrar la exportación en el log
+            console.log(`Usuario ${currentUser.username} exportó ${dataToExport.length} registros a PDF`);
+        }
+
+        // Funciones de sincronización
+        function showSyncModal() {
+            if (currentUser.role !== 'Administrador') {
+                showToast('No tiene permisos para configurar la sincronización', 'error');
+                return;
+            }
+            
+            syncAlert.style.display = 'none';
+            connectionStatus.style.display = 'none';
+            syncModal.style.display = 'block';
+            
+            // Cargar lista de dispositivos
+            refreshDevicesList();
+        }
+
+        function testGithubConnection() {
+            const token = githubToken.value.trim();
+            const repo = repoName.value.trim();
+            
+            if (!token || !repo) {
+                showAlert(syncAlert, 'Por favor, complete el token y el nombre del repositorio', 'error');
+                return;
+            }
+            
+            // Verificar formato del repositorio
+            if (!repo.includes('/')) {
+                showAlert(syncAlert, 'El nombre del repositorio debe estar en formato "usuario/repositorio"', 'error');
+                return;
+            }
+            
+            connectionStatus.style.display = 'block';
+            connectionStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Probando conexión con GitHub...';
+            connectionStatus.className = 'alert alert-info';
+            
+            // Probar la conexión con GitHub
+            fetch(`https://api.github.com/repos/${repo}`, {
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                connectionStatus.innerHTML = `<i class="fas fa-check-circle"></i> Conexión exitosa. Repositorio: ${data.full_name}`;
+                connectionStatus.className = 'alert alert-success';
+                showToast('Conexión con GitHub exitosa', 'success');
+            })
+            .catch(error => {
+                console.error('Error testing GitHub connection:', error);
+                connectionStatus.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error de conexión: ${error.message}`;
+                connectionStatus.className = 'alert alert-error';
+                showToast('Error de conexión con GitHub', 'error');
+            });
+        }
+
+        function saveSyncConfiguration() {
+            syncConfig.githubToken = githubToken.value.trim();
+            syncConfig.repoName = repoName.value.trim();
+            syncConfig.branchName = branchName.value.trim();
+            syncConfig.fileName = fileName.value.trim();
+            syncConfig.deviceName = deviceName.value.trim();
+            
+            saveSyncConfig();
+            showToast('Configuración de sincronización guardada', 'success');
+        }
+
+        function toggleSync() {
+            if (isSyncing) {
+                stopSync();
+            } else {
+                startSync();
+            }
+        }
+
+        function startSync() {
+            if (!syncConfig.githubToken || !syncConfig.repoName) {
+                showAlert(syncAlert, 'Por favor, configure el token y el repositorio primero', 'error');
+                return;
+            }
+            
+            isSyncing = true;
+            startSyncBtn.innerHTML = '<i class="fas fa-stop"></i> Detener Sincronización';
+            startSyncBtn.className = 'btn btn-danger';
+            
+            // Actualizar estado de sincronización
+            updateSyncStatus('Conectando...', 'connecting');
+            
+            // Sincronizar inmediatamente
+            syncWithGitHub();
+            
+            // Configurar sincronización periódica cada 30 segundos
+            syncInterval = setInterval(syncWithGitHub, 30000);
+            
+            showToast('Sincronización iniciada', 'success');
+        }
+
+        function stopSync() {
+            isSyncing = false;
+            clearInterval(syncInterval);
+            startSyncBtn.innerHTML = '<i class="fas fa-sync"></i> Iniciar Sincronización';
+            startSyncBtn.className = 'btn btn-primary';
+            
+            // Actualizar estado de sincronización
+            updateSyncStatus('Desconectado', 'disconnected');
+            
+            showToast('Sincronización detenida', 'info');
+        }
+
+        function updateSyncStatus(text, status) {
+            syncStatusText.textContent = text;
+            syncIndicator.className = 'sync-indicator';
+            
+            switch(status) {
+                case 'connected':
+                    syncIndicator.classList.add('sync-connected');
+                    break;
+                case 'disconnected':
+                    syncIndicator.classList.add('sync-disconnected');
+                    break;
+                case 'connecting':
+                    syncIndicator.classList.add('sync-connecting');
+                    break;
+            }
+        }
+
+        function syncWithGitHub() {
+            if (!isSyncing) return;
+            
+            updateSyncStatus('Sincronizando...', 'connecting');
+            
+            // 1. Obtener datos actuales del repositorio
+            fetch(`https://api.github.com/repos/${syncConfig.repoName}/contents/${syncConfig.fileName}?ref=${syncConfig.branchName}`, {
+                headers: {
+                    'Authorization': `token ${syncConfig.githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            })
+            .then(response => {
+                if (response.status === 404) {
+                    // El archivo no existe, se creará por primera vez
+                    return null;
+                }
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                    // Decodificar el contenido del archivo
+                    const content = atob(data.content);
+                    const remoteData = JSON.parse(content);
+                    
+                    // Procesar datos remotos
+                    processRemoteData(remoteData);
+                }
+                
+                // 2. Subir cambios locales pendientes
+                return uploadPendingChanges();
+            })
+            .then(() => {
+                updateSyncStatus('Sincronizado', 'connected');
+                
+                // Actualizar lista de dispositivos
+                refreshDevicesList();
+            })
+            .catch(error => {
+                console.error('Error syncing with GitHub:', error);
+                updateSyncStatus('Error de conexión', 'disconnected');
+                showToast('Error de sincronización: ' + error.message, 'error');
+            });
+        }
+
+        function processRemoteData(remoteData) {
+            if (!remoteData || !remoteData.inventory) return;
+            
+            // Actualizar dispositivos conectados
+            if (remoteData.devices) {
+                connectedDevices = remoteData.devices;
+                localStorage.setItem('inventory_connectedDevices', JSON.stringify(connectedDevices));
+            }
+            
+            // Procesar cambios remotos
+            let hasChanges = false;
+            
+            // Para administradores: obtener todos los datos
+            if (currentUser.role === 'Administrador') {
+                // Verificar si hay elementos nuevos o modificados
+                remoteData.inventory.forEach(remoteItem => {
+                    const localItem = inventory.find(item => item.id === remoteItem.id);
+                    
+                    if (!localItem) {
+                        // Elemento nuevo - agregar al inventario local
+                        inventory.push(remoteItem);
+                        hasChanges = true;
+                    } else if (new Date(remoteItem.lastModified) > new Date(localItem.lastModified)) {
+                        // Elemento modificado remotamente - actualizar localmente
+                        Object.assign(localItem, remoteItem);
+                        hasChanges = true;
+                    }
+                });
+                
+                // Verificar elementos eliminados remotamente
+                inventory = inventory.filter(localItem => {
+                    const existsInRemote = remoteData.inventory.some(remoteItem => remoteItem.id === localItem.id);
+                    if (!existsInRemote && localItem.deviceId !== deviceId) {
+                        hasChanges = true;
+                        return false; // Eliminar elemento
+                    }
+                    return true;
+                });
+            } else {
+                // Para usuarios normales: solo obtener elementos aprobados y propios
+                remoteData.inventory.forEach(remoteItem => {
+                    // Solo procesar si el elemento está aprobado o es del usuario actual
+                    if (remoteItem.approved || remoteItem.deviceId === deviceId) {
+                        const localItem = inventory.find(item => item.id === remoteItem.id);
+                        
+                        if (!localItem) {
+                            // Elemento nuevo - agregar al inventario local
+                            inventory.push(remoteItem);
+                            hasChanges = true;
+                        } else if (new Date(remoteItem.lastModified) > new Date(localItem.lastModified)) {
+                            // Elemento modificado remotamente - actualizar localmente
+                            Object.assign(localItem, remoteItem);
+                            hasChanges = true;
+                        }
+                    }
+                });
+            }
+            
+            if (hasChanges) {
+                saveInventory();
+                filterInventory();
+                showToast('Datos sincronizados correctamente', 'success');
+            }
+        }
+
+        function uploadPendingChanges() {
+            if (pendingChanges.length === 0) {
+                return Promise.resolve();
+            }
+            
+            // Obtener SHA del archivo actual para actualizarlo
+            return fetch(`https://api.github.com/repos/${syncConfig.repoName}/contents/${syncConfig.fileName}?ref=${syncConfig.branchName}`, {
+                headers: {
+                    'Authorization': `token ${syncConfig.githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            })
+            .then(response => {
+                let currentSha = null;
+                if (response.ok) {
+                    return response.json().then(data => {
+                        currentSha = data.sha;
+                        return atob(data.content);
+                    });
+                } else if (response.status === 404) {
+                    return null; // El archivo no existe
+                } else {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+            })
+            .then(currentContent => {
+                let remoteData = currentContent ? JSON.parse(currentContent) : { inventory: [], devices: {} };
+                
+                // Aplicar cambios pendientes
+                pendingChanges.forEach(change => {
+                    switch(change.type) {
+                        case 'create':
+                            // Agregar nuevo elemento
+                            remoteData.inventory.push(change.data);
+                            break;
+                        case 'update':
+                            // Actualizar elemento existente
+                            const index = remoteData.inventory.findIndex(item => item.id === change.data.id);
+                            if (index !== -1) {
+                                remoteData.inventory[index] = change.data;
+                            } else {
+                                remoteData.inventory.push(change.data);
+                            }
+                            break;
+                        case 'delete':
+                            // Eliminar elemento
+                            remoteData.inventory = remoteData.inventory.filter(item => item.id !== change.data.id);
+                            break;
+                    }
+                });
+                
+                // Actualizar información del dispositivo actual
+                remoteData.devices = remoteData.devices || {};
+                remoteData.devices[deviceId] = {
+                    name: syncConfig.deviceName || `Dispositivo ${deviceId.substring(0, 8)}`,
+                    lastSync: new Date().toISOString(),
+                    userId: currentUser.id,
+                    userRole: currentUser.role
+                };
+                
+                // Limpiar dispositivos inactivos (más de 5 minutos sin sincronizar)
+                const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+                Object.keys(remoteData.devices).forEach(deviceKey => {
+                    if (remoteData.devices[deviceKey].lastSync < fiveMinutesAgo) {
+                        delete remoteData.devices[deviceKey];
+                    }
+                });
+                
+                // Convertir a JSON y codificar en base64
+                const content = JSON.stringify(remoteData, null, 2);
+                const encodedContent = btoa(unescape(encodeURIComponent(content)));
+                
+                // Subir archivo actualizado
+                return fetch(`https://api.github.com/repos/${syncConfig.repoName}/contents/${syncConfig.fileName}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${syncConfig.githubToken}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `Sincronización desde ${syncConfig.deviceName || deviceId}`,
+                        content: encodedContent,
+                        branch: syncConfig.branchName,
+                        sha: currentSha // Si es null, se creará un nuevo archivo
+                    })
+                });
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(() => {
+                // Limpiar cambios pendientes después de una sincronización exitosa
+                pendingChanges = [];
+                localStorage.setItem('inventory_pendingChanges', JSON.stringify(pendingChanges));
+                
+                showToast('Cambios sincronizados con el servidor', 'success');
+            });
+        }
+
+        function addPendingChange(change) {
+            pendingChanges.push(change);
+            localStorage.setItem('inventory_pendingChanges', JSON.stringify(pendingChanges));
+        }
+
+        function refreshDevicesList() {
+            if (!syncConfig.githubToken || !syncConfig.repoName) {
+                deviceList.innerHTML = '<div class="alert alert-info">Configure la sincronización para ver dispositivos</div>';
+                return;
+            }
+            
+            deviceList.innerHTML = '<div><i class="fas fa-spinner fa-spin"></i> Cargando dispositivos...</div>';
+            
+            fetch(`https://api.github.com/repos/${syncConfig.repoName}/contents/${syncConfig.fileName}?ref=${syncConfig.branchName}`, {
+                headers: {
+                    'Authorization': `token ${syncConfig.githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const content = atob(data.content);
+                const remoteData = JSON.parse(content);
+                
+                deviceList.innerHTML = '';
+                
+                if (!remoteData.devices || Object.keys(remoteData.devices).length === 0) {
+                    deviceList.innerHTML = '<div class="alert alert-info">No hay dispositivos conectados</div>';
+                    return;
+                }
+                
+                Object.keys(remoteData.devices).forEach(deviceKey => {
+                    const device = remoteData.devices[deviceKey];
+                    const deviceElement = document.createElement('div');
+                    deviceElement.className = 'device-item';
+                    
+                    deviceElement.innerHTML = `
+                        <div class="device-info">
+                            <span class="device-name">${device.name}</span>
+                            <span class="device-id">Última sincronización: ${formatDateTime(device.lastSync)}</span>
+                        </div>
+                        <div class="device-status">
+                            <span class="sync-indicator sync-connected"></span>
+                            ${deviceKey !== deviceId ? 
+                                `<input type="checkbox" class="sync-checkbox" data-device="${deviceKey}" ${isDeviceSynced(deviceKey) ? 'checked' : ''}>` : 
+                                '<span>(Este dispositivo)</span>'
+                            }
+                        </div>
+                    `;
+                    
+                    deviceList.appendChild(deviceElement);
+                    
+                    // Agregar event listener para el checkbox
+                    const checkbox = deviceElement.querySelector('.sync-checkbox');
+                    if (checkbox) {
+                        checkbox.addEventListener('change', (e) => {
+                            toggleDeviceSync(deviceKey, e.target.checked);
+                        });
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error loading devices:', error);
+                deviceList.innerHTML = `<div class="alert alert-error">Error al cargar dispositivos: ${error.message}</div>`;
+            });
+        }
+
+        function isDeviceSynced(deviceId) {
+            // Por defecto, los administradores sincronizan con todos los dispositivos
+            if (currentUser.role === 'Administrador') {
+                return true;
+            }
+            
+            // Los usuarios normales solo sincronizan con dispositivos específicos si están configurados
+            const syncSettings = JSON.parse(localStorage.getItem('inventory_syncSettings') || '{}');
+            return syncSettings[deviceId] === true;
+        }
+
+        function toggleDeviceSync(deviceId, enabled) {
+            const syncSettings = JSON.parse(localStorage.getItem('inventory_syncSettings') || '{}');
+            syncSettings[deviceId] = enabled;
+            localStorage.setItem('inventory_syncSettings', JSON.stringify(syncSettings));
+            
+            showToast(`Sincronización con dispositivo ${enabled ? 'activada' : 'desactivada'}`, 'info');
+        }
+
+        // Funciones de utilidad y seguridad
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        function hashPassword(password) {
+            // Usar SHA-256 para el hash de contraseñas
+            return CryptoJS.SHA256(password).toString();
+        }
+
+        function encryptData(data) {
+            // Cifrar datos sensibles antes de almacenarlos
+            return CryptoJS.AES.encrypt(data, encryptionKey).toString();
+        }
+
+        function decryptData(encryptedData) {
+            // Descifrar datos almacenados
+            const bytes = CryptoJS.AES.decrypt(encryptedData, encryptionKey);
+            return bytes.toString(CryptoJS.enc.Utf8);
+        }
+
+        function compressData(data) {
+            // Compresión simple para demostración
+            return btoa(JSON.stringify(data));
+        }
+
+        function decompressData(data) {
+            // Descompresión simple para demostración
+            try {
+                return JSON.parse(atob(data));
+            } catch (e) {
+                // Si falla, asumir que no está comprimido (para retrocompatibilidad)
+                return JSON.parse(data);
+            }
+        }
+
+        function sanitizeInput(input) {
+            // Prevenir XSS escapando caracteres HTML
+            const div = document.createElement('div');
+            div.textContent = input;
+            return div.innerHTML;
+        }
+
+        function sanitizeOutput(output) {
+            // Escapar contenido para prevenir XSS
+            if (typeof output !== 'string') return output;
+            return output.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function isPasswordStrong(password) {
+            // Verificar que la contraseña tenga al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial
+            const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+            return strongRegex.test(password);
+        }
+
+        function checkPasswordStrength() {
+            const password = passwordInputField.value;
+            const strengthBar = passwordStrength;
+            
+            if (password.length === 0) {
+                strengthBar.className = 'password-strength';
+                strengthBar.style.width = '0%';
+                return;
+            }
+            
+            if (isPasswordStrong(password)) {
+                strengthBar.className = 'password-strength strength-strong';
+            } else if (password.length >= 8) {
+                strengthBar.className = 'password-strength strength-medium';
+            } else {
+                strengthBar.className = 'password-strength strength-weak';
+            }
+        }
+
+        function checkNewPasswordStrength() {
+            const password = document.getElementById('newProfilePassword').value;
+            const strengthBar = newPasswordStrength;
+            
+            if (password.length === 0) {
+                strengthBar.className = 'password-strength';
+                strengthBar.style.width = '0%';
+                return;
+            }
+            
+            if (isPasswordStrong(password)) {
+                strengthBar.className = 'password-strength strength-strong';
+            } else if (password.length >= 8) {
+                strengthBar.className = 'password-strength strength-medium';
+            } else {
+                strengthBar.className = 'password-strength strength-weak';
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString();
+        }
+
+        function formatDateTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+            else return (bytes / 1048576).toFixed(2) + ' MB';
+        }
+
+        function showAlert(alertElement, message, type) {
+            alertElement.textContent = message;
+            alertElement.className = 'alert';
+            alertElement.classList.add(`alert-${type}`);
+            
+            // Agregar icono según el tipo
+            let icon = '';
+            switch(type) {
+                case 'success':
+                    icon = '<i class="fas fa-check-circle"></i>';
+                    break;
+                case 'error':
+                    icon = '<i class="fas fa-exclamation-circle"></i>';
+                    break;
+                case 'warning':
+                    icon = '<i class="fas fa-exclamation-triangle"></i>';
+                    break;
+                case 'info':
+                    icon = '<i class="fas fa-info-circle"></i>';
+                    break;
+            }
+            
+            alertElement.innerHTML = `${icon} ${message}`;
+            alertElement.style.display = 'flex';
+            
+            // Ocultar alerta después de 5 segundos
+            setTimeout(() => {
+                alertElement.style.display = 'none';
+            }, 5000);
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let icon = '';
+            switch(type) {
+                case 'success':
+                    icon = '<i class="fas fa-check-circle toast-icon"></i>';
+                    break;
+                case 'error':
+                    icon = '<i class="fas fa-exclamation-circle toast-icon"></i>';
+                    break;
+                case 'warning':
+                    icon = '<i class="fas fa-exclamation-triangle toast-icon"></i>';
+                    break;
+                case 'info':
+                    icon = '<i class="fas fa-info-circle toast-icon"></i>';
+                    break;
+            }
+            
+            toast.innerHTML = `
+                ${icon}
+                <div class="toast-message">${message}</div>
+                <button class="toast-close">&times;</button>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Mostrar toast con animación
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Configurar evento de cierre
+            const closeBtn = toast.querySelector('.toast-close');
+            closeBtn.addEventListener('click', () => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toastContainer.removeChild(toast);
+                }, 300);
+            });
+            
+            // Ocultar automáticamente después de 5 segundos
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        if (toast.parentNode) {
+                            toastContainer.removeChild(toast);
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function saveInventory() {
+            const encryptedData = encryptData(JSON.stringify(inventory));
+            localStorage.setItem('inventory_data', encryptedData);
+        }
+
+        function saveUsers() {
+            const encryptedData = encryptData(JSON.stringify(users));
+            localStorage.setItem('inventory_users', encryptedData);
+        }
+
+        function saveBackups() {
+            localStorage.setItem('inventory_backups', JSON.stringify(backups));
+        }
+    </script>
+</body>
+</html>
