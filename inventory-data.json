@@ -1,0 +1,10 @@
+{
+  "inventory": [
+    // Aquí se almacenarán todos los elementos del inventario
+  ],
+  "devices": {
+    // Aquí se registrarán los dispositivos conectados
+  },
+  "lastSync": "2023-01-01T00:00:00.000Z"
+  // Fecha de la última sincronización
+}
